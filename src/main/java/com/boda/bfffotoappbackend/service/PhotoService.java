@@ -9,4 +9,5 @@ public interface PhotoService {
 
     public List<Photo> getAllPhotos();
     public Photo uploadPhoto(MultipartFile file, String userId);
+    public void deletePhoto(Long photoId);
 }

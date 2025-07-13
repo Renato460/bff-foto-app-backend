@@ -4,6 +4,7 @@ import com.boda.bfffotoappbackend.dto.CreatePhotoRequest;
 import com.boda.bfffotoappbackend.dto.Photo;
 import com.boda.bfffotoappbackend.service.PhotoService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -16,7 +17,9 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -92,5 +95,41 @@ public class PhotoServiceImpl implements PhotoService {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo leer el archivo.", e);
         }
+    }
+
+    @Override
+    public void deletePhoto(Long photoId) {
+        Photo photoToDelete = supabaseWebClient.get()
+                .uri("/rest/v1/photos?select=storage_path&id=eq." + photoId)
+                .header("Authorization", "Bearer " + this.supabaseServiceKey)
+                .retrieve()
+                .bodyToFlux(Photo.class)
+                .singleOrEmpty()
+                .block();
+
+        if (photoToDelete == null || photoToDelete.getStoragePath() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró la foto con el ID proporcionado.");
+        }
+
+        Map<String, List<String>> body = new HashMap<>();
+        body.put("prefixes", List.of(photoToDelete.getStoragePath()));
+
+        // 2. Borrar el archivo de Supabase Storage
+        String storagePath = photoToDelete.getStoragePath();
+        supabaseWebClient.method(HttpMethod.DELETE)
+                .uri("/storage/v1/object/" + BUCKET_NAME + "/" + storagePath)
+                .header("Authorization", "Bearer " + this.supabaseServiceKey)
+                .bodyValue(body)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+
+        // 3. Borrar el registro de la base de datos
+        supabaseWebClient.delete()
+                .uri("/rest/v1/photos?id=eq." + photoId)
+                .header("Authorization", "Bearer " + this.supabaseServiceKey)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
     }
 }

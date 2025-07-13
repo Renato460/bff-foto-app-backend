@@ -4,6 +4,7 @@ import com.boda.bfffotoappbackend.security.filter.JwtAuthFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -36,6 +37,7 @@ public class SecurityConfig {
                         // Permitir el acceso público al endpoint de login
                         .requestMatchers("/api/auth/login").permitAll()
                         // Cualquier otra petición debe ser autenticada
+                        .requestMatchers(HttpMethod.DELETE, "/api/photos/**").hasAuthority("admin")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

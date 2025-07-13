@@ -6,7 +6,6 @@ import com.boda.bfffotoappbackend.service.PhotoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,5 +47,11 @@ public class PhotoController {
         Photo newPhoto = photoService.uploadPhoto(file, userId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(newPhoto);
+    }
+
+    @DeleteMapping("/{photoId}")
+    public ResponseEntity<Void> deletePhoto(@PathVariable("photoId") Long photoId) {
+        photoService.deletePhoto(photoId);
+        return ResponseEntity.noContent().build();
     }
 }
